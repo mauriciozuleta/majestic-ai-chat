@@ -1,0 +1,302 @@
+<!-- Ollama-style Chat UI for RAG -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MAJESTIC P.L.T. BUSINESS PLAN CHATBOX</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #181c24; margin: 0; padding: 0; color: #e6e6e6; }
+        .main-layout { display: flex; min-height: 100vh; }
+        .sidebar {
+            width: 260px;
+            background: #23272f;
+            border-right: 1px solid #222;
+            padding: 32px 16px 16px 16px;
+            box-sizing: border-box;
+            position: sticky;
+            top: 0;
+            align-self: flex-start;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        /* Main topic buttons with distinct colors */
+        .sidebar .main-topic-btn[data-topic="majestic_plt"] {
+            background: #3b82f6;
+            color: #fff;
+        }
+        .sidebar .main-topic-btn[data-topic="majestic_plt"]:hover {
+            background: #2563eb;
+        }
+        .sidebar .main-topic-btn[data-topic="fresh_24"] {
+            background: #10b981;
+            color: #fff;
+        }
+        .sidebar .main-topic-btn[data-topic="fresh_24"]:hover {
+            background: #059669;
+        }
+        .sidebar .main-topic-btn[data-topic="majestic_air_cargo"] {
+            background: #f59e42;
+            color: #23272f;
+        }
+        .sidebar .main-topic-btn[data-topic="majestic_air_cargo"]:hover {
+            background: #d97706;
+            color: #fff;
+        }
+        .sidebar .main-topic-btn {
+            width: 100%;
+            border: none;
+            border-radius: 10px;
+            padding: 14px 16px;
+            font-size: 1.08em;
+            font-weight: bold;
+            margin-bottom: 14px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px #0002;
+            transition: background 0.2s, color 0.2s;
+        }
+        .sidebar h3 { color: #b0b0b0; font-size: 1.1em; margin-top: 0; margin-bottom: 18px; letter-spacing: 1px; }
+        .suggest-list { list-style: none; padding: 0; margin: 0; }
+        .suggest-list li { margin-bottom: 14px; }
+        .suggest-btn { width: 100%; border: none; border-radius: 8px; padding: 10px 14px; font-size: 1em; text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; }
+        /* Prompt button colors by topic */
+        .submenu#submenu-majestic_plt .suggest-btn { background: #3b82f6; color: #fff; }
+        .submenu#submenu-majestic_plt .suggest-btn:hover { background: #2563eb; color: #fff; }
+        .submenu#submenu-fresh_24 .suggest-btn { background: #10b981; color: #fff; }
+        .submenu#submenu-fresh_24 .suggest-btn:hover { background: #059669; color: #fff; }
+        .submenu#submenu-majestic_air_cargo .suggest-btn { background: #f59e42; color: #23272f; }
+        .submenu#submenu-majestic_air_cargo .suggest-btn:hover { background: #d97706; color: #fff; }
+        .chat-container { flex: 1; max-width: 700px; margin: 40px auto; background: #23272f; border-radius: 10px; box-shadow: 0 2px 8px #0003; padding: 24px; }
+        .chat-history { min-height: 300px; margin-bottom: 16px; }
+        .msg { display: flex; margin-bottom: 16px; }
+        .msg.user { justify-content: flex-end; }
+        .msg.assistant { justify-content: flex-start; }
+        .bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px; font-size: 1rem; line-height: 1.5; }
+        /* User message color by prompt source */
+        .msg.user .bubble { background: #3b82f6; color: #fff; border-bottom-right-radius: 4px; }
+        .msg.user[data-source="majestic plt bp for rag"] .bubble { background: #3b82f6; color: #fff; }
+        .msg.user[data-source="fresh 24 bp for rag"] .bubble { background: #10b981; color: #fff; }
+        .msg.user[data-source="majestic cargo bp for rag"] .bubble { background: #f59e42; color: #23272f; }
+        .msg.assistant .bubble { background: #313543; color: #e6e6e6; border-bottom-left-radius: 4px; }
+        #ask-form { display: flex; gap: 8px; }
+        #question { flex: 1; padding: 10px; font-size: 1rem; border-radius: 8px; border: 1px solid #444; background: #23272f; color: #e6e6e6; }
+        #ask-form button { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: none; background: #3b82f6; color: #fff; cursor: pointer; }
+        #ask-form button:disabled { background: #555; }
+        @media (max-width: 900px) {
+            .main-layout { flex-direction: column; }
+            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #222; }
+            .chat-container { max-width: 100%; margin: 0; border-radius: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="main-layout">
+        <aside class="sidebar">
+            <div class="main-topic-group">
+                <button class="main-topic-btn" data-topic="majestic_plt">Majestic P.L.T Initiative</button>
+                <ul class="suggest-list submenu" id="submenu-majestic_plt" style="display:none;"></ul>
+            </div>
+            <div class="main-topic-group">
+                <button class="main-topic-btn" data-topic="fresh_24">FRESH-24 Project</button>
+                <ul class="suggest-list submenu" id="submenu-fresh_24" style="display:none;"></ul>
+            </div>
+            <div class="main-topic-group">
+                <button class="main-topic-btn" data-topic="majestic_air_cargo">Majestic Air Cargo Project</button>
+                <ul class="suggest-list submenu" id="submenu-majestic_air_cargo" style="display:none;"></ul>
+            </div>
+        </aside>
+        <div class="chat-container">
+            <h2 style="text-align:center;">MAJESTIC P.L.T. BUSINESS PLAN CHATBOX</h2>
+            <div class="chat-history" id="chat-history"></div>
+            <form id="ask-form" autocomplete="off">
+                <input type="text" id="question" placeholder="Type your question..." required autofocus>
+                <button type="submit">Send</button>
+            </form>
+        </div>
+    </div>
+    <script type="module">
+        import { FRESH_24_PROMPTS, getRandomPrompts as getRandomFresh24Prompts } from './fresh_24_prompts.js';
+        import { MAJESTIC_PLT_PROMPTS, getRandomPrompts as getRandomPltPrompts } from './majestic_plt_prompts.js';
+        import { MAJESTIC_CARGO_PROMPTS, getRandomPrompts as getRandomCargoPrompts } from './majestic_cargo_prompts.js';
+        // Sidebar submenu logic
+        document.addEventListener('DOMContentLoaded', function() {
+            // Helper to render prompts for Fresh 24
+            function renderFresh24Prompts(excludeIndices = []) {
+                const submenu = document.getElementById('submenu-fresh_24');
+                submenu.innerHTML = '';
+                const prompts = getRandomFresh24Prompts(FRESH_24_PROMPTS, 5, excludeIndices);
+                prompts.forEach((p, idx) => {
+                    const li = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.className = 'suggest-btn';
+                    btn.setAttribute('data-source', 'fresh 24 bp for rag');
+                    btn.textContent = p.prompt;
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        questionInput.value = p.prompt;
+                        askForm.setAttribute('data-filter-source', 'fresh 24 bp for rag');
+                        askForm.requestSubmit();
+                    });
+                    li.appendChild(btn);
+                    submenu.appendChild(li);
+                });
+                // Add 'More Suggested Topics' button
+                const moreLi = document.createElement('li');
+                const moreBtn = document.createElement('button');
+                moreBtn.className = 'suggest-btn';
+                moreBtn.style.background = '#444';
+                moreBtn.textContent = 'More Suggested Topics';
+                moreBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Exclude currently shown prompts
+                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : FRESH_24_PROMPTS.indexOf(p));
+                    renderFresh24Prompts(shownIndices);
+                });
+                moreLi.appendChild(moreBtn);
+                submenu.appendChild(moreLi);
+            }
+
+            // Helper to render prompts for Majestic P.L.T
+            function renderPltPrompts(excludeIndices = []) {
+                const submenu = document.getElementById('submenu-majestic_plt');
+                submenu.innerHTML = '';
+                const prompts = getRandomPltPrompts(MAJESTIC_PLT_PROMPTS, 5, excludeIndices);
+                prompts.forEach((p, idx) => {
+                    const li = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.className = 'suggest-btn';
+                    btn.setAttribute('data-source', 'majestic plt bp for rag');
+                    btn.textContent = p.prompt;
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        questionInput.value = p.prompt;
+                        askForm.setAttribute('data-filter-source', 'majestic plt bp for rag');
+                        askForm.requestSubmit();
+                    });
+                    li.appendChild(btn);
+                    submenu.appendChild(li);
+                });
+                // Add 'More Suggested Topics' button
+                const moreLi = document.createElement('li');
+                const moreBtn = document.createElement('button');
+                moreBtn.className = 'suggest-btn';
+                moreBtn.style.background = '#444';
+                moreBtn.textContent = 'More Suggested Topics';
+                moreBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : MAJESTIC_PLT_PROMPTS.indexOf(p));
+                    renderPltPrompts(shownIndices);
+                });
+                moreLi.appendChild(moreBtn);
+                submenu.appendChild(moreLi);
+            }
+
+            // Helper to render prompts for Majestic Air Cargo
+            function renderCargoPrompts(excludeIndices = []) {
+                const submenu = document.getElementById('submenu-majestic_air_cargo');
+                submenu.innerHTML = '';
+                const prompts = getRandomCargoPrompts(MAJESTIC_CARGO_PROMPTS, 5, excludeIndices);
+                prompts.forEach((p, idx) => {
+                    const li = document.createElement('li');
+                    const btn = document.createElement('button');
+                    btn.className = 'suggest-btn';
+                    btn.setAttribute('data-source', 'majestic cargo bp for rag');
+                    btn.textContent = p.prompt;
+                    btn.addEventListener('click', function(e) {
+                        e.stopPropagation();
+                        questionInput.value = p.prompt;
+                        askForm.setAttribute('data-filter-source', 'majestic cargo bp for rag');
+                        askForm.requestSubmit();
+                    });
+                    li.appendChild(btn);
+                    submenu.appendChild(li);
+                });
+                // Add 'More Suggested Topics' button
+                const moreLi = document.createElement('li');
+                const moreBtn = document.createElement('button');
+                moreBtn.className = 'suggest-btn';
+                moreBtn.style.background = '#444';
+                moreBtn.textContent = 'More Suggested Topics';
+                moreBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : MAJESTIC_CARGO_PROMPTS.indexOf(p));
+                    renderCargoPrompts(shownIndices);
+                });
+                moreLi.appendChild(moreBtn);
+                submenu.appendChild(moreLi);
+            }
+
+            // Expand/collapse submenus for each main topic
+            document.querySelectorAll('.main-topic-btn').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    const topic = btn.getAttribute('data-topic');
+                    document.querySelectorAll('.submenu').forEach(sub => {
+                        if (sub.id === 'submenu-' + topic) {
+                            // Render dynamic prompts for each topic
+                            if (topic === 'fresh_24') renderFresh24Prompts();
+                            else if (topic === 'majestic_plt') renderPltPrompts();
+                            else if (topic === 'majestic_air_cargo') renderCargoPrompts();
+                            sub.style.display = (sub.style.display === 'none') ? 'block' : 'none';
+                        } else {
+                            sub.style.display = 'none';
+                        }
+                    });
+                });
+            });
+        });
+        const chatHistory = document.getElementById('chat-history');
+        const askForm = document.getElementById('ask-form');
+        const questionInput = document.getElementById('question');
+        let history = [];
+
+        function renderHistory() {
+            chatHistory.innerHTML = '';
+            history.forEach(msg => {
+                const div = document.createElement('div');
+                div.className = 'msg ' + msg.role;
+                if (msg.source) div.setAttribute('data-source', msg.source);
+                let html = `<div class="bubble">${msg.text}</div>`;
+                div.innerHTML = html;
+                chatHistory.appendChild(div);
+            });
+            chatHistory.scrollTop = chatHistory.scrollHeight;
+        }
+
+        askForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const question = questionInput.value.trim();
+            if (!question) return;
+            // Get filter_source if set by submenu
+            const filterSource = askForm.getAttribute('data-filter-source') || null;
+            askForm.removeAttribute('data-filter-source');
+            // Store the source for coloring
+            let userMsg = { role: 'user', text: question };
+            if (filterSource) userMsg.source = filterSource;
+            history.push(userMsg);
+            renderHistory();
+            questionInput.value = '';
+            askForm.querySelector('button').disabled = true;
+            // Call FastAPI backend /rag endpoint
+            let answer = 'Loading...';
+            let sources = [];
+            try {
+                const payload = { question, top_k: 3 };
+                if (filterSource) payload.filter_source = filterSource;
+                const res = await fetch('http://localhost:8000/rag', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                answer = data.answer;
+                sources = data.chunks || [];
+            } catch (err) {
+                answer = 'Error: ' + err.message;
+            }
+            history.push({ role: 'assistant', text: answer, sources });
+            renderHistory();
+            askForm.querySelector('button').disabled = false;
+            questionInput.focus();
+        };
+    </script>
+</body>
+</html>
