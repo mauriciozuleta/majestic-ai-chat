@@ -67,6 +67,32 @@
         .submenu#submenu-majestic_air_cargo .suggest-btn:hover { background: #d97706; color: #fff; }
         .chat-container { flex: 1; max-width: 700px; margin: 40px auto; background: #23272f; border-radius: 10px; box-shadow: 0 2px 8px #0003; padding: 24px; }
         .chat-history { min-height: 300px; margin-bottom: 16px; }
+            .chat-container {
+                flex: 1;
+                max-width: 700px;
+                margin: 40px auto;
+                background: #23272f;
+                border-radius: 10px;
+                box-shadow: 0 2px 8px #0003;
+                padding: 24px;
+                display: flex;
+                flex-direction: column;
+                height: 80vh;
+                min-height: 500px;
+            }
+            .chat-history {
+                min-height: 300px;
+                margin-bottom: 16px;
+                max-height: 60vh;
+                overflow-y: auto;
+                flex: 1 1 auto;
+            }
+            .chat-bottom-controls {
+                display: flex;
+                flex-direction: column;
+                gap: 0;
+                flex-shrink: 0;
+            }
         .msg { display: flex; margin-bottom: 16px; }
         .msg.user { justify-content: flex-end; }
         .msg.assistant { justify-content: flex-start; }
@@ -78,6 +104,15 @@
         .msg.user[data-source="majestic cargo bp for rag"] .bubble { background: #f59e42; color: #23272f; }
         .msg.assistant .bubble { background: #313543; color: #e6e6e6; border-bottom-left-radius: 4px; }
         #ask-form { display: flex; gap: 8px; }
+        #ask-form {
+            display: flex;
+            gap: 8px;
+            position: sticky;
+            bottom: 0;
+            background: #23272f;
+            z-index: 10;
+            padding-bottom: 8px;
+        }
         #question { flex: 1; padding: 10px; font-size: 1rem; border-radius: 8px; border: 1px solid #444; background: #23272f; color: #e6e6e6; }
         #ask-form button { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: none; background: #3b82f6; color: #fff; cursor: pointer; }
         #ask-form button:disabled { background: #555; }
@@ -107,10 +142,18 @@
         <div class="chat-container">
             <h2 style="text-align:center;">MAJESTIC P.L.T. BUSINESS PLAN CHATBOX</h2>
             <div class="chat-history" id="chat-history"></div>
-            <form id="ask-form" autocomplete="off">
-                <input type="text" id="question" placeholder="Type your question..." required autofocus>
-                <button type="submit">Send</button>
-            </form>
+            <div class="chat-bottom-controls">
+                <form id="ask-form" autocomplete="off">
+                    <input type="text" id="question" placeholder="Type your question..." required autofocus>
+                    <button type="submit">Send</button>
+                </form>
+                <div id="info-request-container" style="margin-top: 18px; background: #23272f; padding: 18px 0 0 0; border-radius: 0 0 10px 10px;">
+                    <label for="info-request-email" style="display:block; color:#b0b0b0; font-size:1em; margin-bottom:6px;">Let's talk, give me your Email and question, and I'll come back to you as soon I can.</label>
+                    <input type="email" id="info-request-email" name="info-request-email" style="width:100%; border-radius:8px; border:1px solid #444; background:#181c24; color:#e6e6e6; font-size:1em; padding:10px; margin-bottom:8px;" placeholder="Your email address..." autocomplete="email" required>
+                    <textarea id="info-request" maxlength="500" rows="3" style="width:100%; border-radius:8px; border:1px solid #444; background:#181c24; color:#e6e6e6; font-size:1em; padding:10px; resize:vertical; margin-bottom:8px;" placeholder="Type your message (max 500 characters)..." disabled></textarea>
+                    <button id="info-request-submit" style="width:100%; padding:10px 0; border-radius:8px; border:none; background:#10b981; color:#fff; font-size:1em; cursor:pointer; opacity:1;" disabled>Submit</button>
+                </div>
+            </div>
         </div>
     </div>
     <script type="module">
@@ -258,6 +301,7 @@
                 div.innerHTML = html;
                 chatHistory.appendChild(div);
             });
+            // Scroll to last message
             chatHistory.scrollTop = chatHistory.scrollHeight;
         }
 
@@ -273,6 +317,8 @@
             if (filterSource) userMsg.source = filterSource;
             history.push(userMsg);
             renderHistory();
+            // Scroll to last message after user prompt
+            setTimeout(() => { chatHistory.scrollTop = chatHistory.scrollHeight; }, 0);
             questionInput.value = '';
             askForm.querySelector('button').disabled = true;
             // Call FastAPI backend /rag endpoint
@@ -294,9 +340,39 @@
             }
             history.push({ role: 'assistant', text: answer, sources });
             renderHistory();
+            // Scroll to last message after assistant reply
+            setTimeout(() => { chatHistory.scrollTop = chatHistory.scrollHeight; }, 0);
             askForm.querySelector('button').disabled = false;
             questionInput.focus();
         };
+        // --- Info request email and message validation logic ---
+        const infoEmail = document.getElementById('info-request-email');
+        const infoTextarea = document.getElementById('info-request');
+        const infoSubmit = document.getElementById('info-request-submit');
+
+        function validateEmail(email) {
+            // Simple email regex
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        infoEmail.addEventListener('input', function() {
+            if (validateEmail(infoEmail.value)) {
+                infoTextarea.disabled = false;
+                infoTextarea.style.opacity = '1';
+            } else {
+                infoTextarea.disabled = true;
+                infoTextarea.value = '';
+                infoSubmit.disabled = true;
+            }
+        });
+
+        infoTextarea.addEventListener('input', function() {
+            if (infoTextarea.value.length >= 10) {
+                infoSubmit.disabled = false;
+            } else {
+                infoSubmit.disabled = true;
+            }
+        });
     </script>
 </body>
 </html>
