@@ -10,7 +10,7 @@ import requests
 from index_store import query_index
 
 OLLAMA_URL = "http://localhost:11434/api/generate"
-OLLAMA_MODEL = "llama2"
+OLLAMA_MODEL = "llama2"  # Use 'llama2' for Llama 2 7B compatibility
 
 app = FastAPI()
 
@@ -43,7 +43,7 @@ def build_prompt(context_chunks, question):
 		"You have full access to the Majestic P.L.T. project information below. "
 		"Answer the user's question naturally and directly, as an informed project insider. "
 		"Do not introduce yourself or use formulaic phrases—just provide the answer as if you are sharing knowledge with a colleague. "
-		"Be concise, specific, and avoid hedging or boilerplate. Answer in 2-3 sentences or a short paragraph.\n\n"
+		"Be very concise, clear, and simple. Avoid unnecessary detail and complexity. If the answer involves a list (such as sponsors, aircraft, or team members), mention all items, but keep the answer short and easy to understand—ideally in one or two plain sentences.\n\n"
 		f"Project Information:\n{context}\n\nQuestion: {question}\nAnswer:"
 	)
 	return prompt
@@ -91,12 +91,9 @@ async def rag_query(req: QueryRequest):
 		# Default: use FAISS index
 		from index_store import query_index
 		top_chunks = query_index(query_emb, top_k=top_k)
-	# Truncate each chunk's content for faster LLM response
-	for c in top_chunks:
-		if len(c['content']) > 500:
-			c['content'] = c['content'][:500] + '...'
+	# Concatenate all top chunks' content for a larger context window (no truncation)
 	prompt = build_prompt(top_chunks, question)
-	answer = call_ollama(prompt, num_predict=128)
+	answer = call_ollama(prompt, num_predict=256)
 	return {
 		"question": question,
 		"answer": answer,
