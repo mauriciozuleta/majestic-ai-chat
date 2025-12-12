@@ -3,3 +3,5 @@ fastapi
 uvicorn
 python-docx
 requests
+openai
+python-dotenv

@@ -1,3 +1,4 @@
+export { FRESH_24_PROMPTS, getRandomPrompts };
 // This file will be loaded by the UI to provide prompt suggestions for Fresh 24
 // Copy this file to the ui/ folder if you want to serve it statically
 

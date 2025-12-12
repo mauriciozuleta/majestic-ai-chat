@@ -1,378 +1,347 @@
-<!-- Ollama-style Chat UI for RAG -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>MAJESTIC P.L.T. BUSINESS PLAN CHATBOX</title>
-    <style>
-        body { font-family: Arial, sans-serif; background: #181c24; margin: 0; padding: 0; color: #e6e6e6; }
-        .main-layout { display: flex; min-height: 100vh; }
-        .sidebar {
-            width: 260px;
-            background: #23272f;
-            border-right: 1px solid #222;
-            padding: 32px 16px 16px 16px;
-            box-sizing: border-box;
-            position: sticky;
-            top: 0;
-            align-self: flex-start;
-            height: 100vh;
-            overflow-y: auto;
-        }
-        /* Main topic buttons with distinct colors */
-        .sidebar .main-topic-btn[data-topic="majestic_plt"] {
-            background: #3b82f6;
-            color: #fff;
-        }
-        .sidebar .main-topic-btn[data-topic="majestic_plt"]:hover {
-            background: #2563eb;
-        }
-        .sidebar .main-topic-btn[data-topic="fresh_24"] {
-            background: #10b981;
-            color: #fff;
-        }
-        .sidebar .main-topic-btn[data-topic="fresh_24"]:hover {
-            background: #059669;
-        }
-        .sidebar .main-topic-btn[data-topic="majestic_air_cargo"] {
-            background: #f59e42;
-            color: #23272f;
-        }
-        .sidebar .main-topic-btn[data-topic="majestic_air_cargo"]:hover {
-            background: #d97706;
-            color: #fff;
-        }
-        .sidebar .main-topic-btn {
-            width: 100%;
-            border: none;
-            border-radius: 10px;
-            padding: 14px 16px;
-            font-size: 1.08em;
-            font-weight: bold;
-            margin-bottom: 14px;
-            cursor: pointer;
-            box-shadow: 0 2px 8px #0002;
-            transition: background 0.2s, color 0.2s;
-        }
-        .sidebar h3 { color: #b0b0b0; font-size: 1.1em; margin-top: 0; margin-bottom: 18px; letter-spacing: 1px; }
-        .suggest-list { list-style: none; padding: 0; margin: 0; }
-        .suggest-list li { margin-bottom: 14px; }
-        .suggest-btn { width: 100%; border: none; border-radius: 8px; padding: 10px 14px; font-size: 1em; text-align: left; cursor: pointer; transition: background 0.2s, color 0.2s; }
-        /* Prompt button colors by topic */
-        .submenu#submenu-majestic_plt .suggest-btn { background: #3b82f6; color: #fff; }
-        .submenu#submenu-majestic_plt .suggest-btn:hover { background: #2563eb; color: #fff; }
-        .submenu#submenu-fresh_24 .suggest-btn { background: #10b981; color: #fff; }
-        .submenu#submenu-fresh_24 .suggest-btn:hover { background: #059669; color: #fff; }
-        .submenu#submenu-majestic_air_cargo .suggest-btn { background: #f59e42; color: #23272f; }
-        .submenu#submenu-majestic_air_cargo .suggest-btn:hover { background: #d97706; color: #fff; }
-        .chat-container { flex: 1; max-width: 700px; margin: 40px auto; background: #23272f; border-radius: 10px; box-shadow: 0 2px 8px #0003; padding: 24px; }
-        .chat-history { min-height: 300px; margin-bottom: 16px; }
-            .chat-container {
-                flex: 1;
-                max-width: 700px;
-                margin: 40px auto;
-                background: #23272f;
-                border-radius: 10px;
-                box-shadow: 0 2px 8px #0003;
-                padding: 24px;
-                display: flex;
-                flex-direction: column;
-                height: 80vh;
-                min-height: 500px;
-            }
-            .chat-history {
-                min-height: 300px;
-                margin-bottom: 16px;
-                max-height: 60vh;
-                overflow-y: auto;
-                flex: 1 1 auto;
-            }
-            .chat-bottom-controls {
-                display: flex;
-                flex-direction: column;
-                gap: 0;
-                flex-shrink: 0;
-            }
-        .msg { display: flex; margin-bottom: 16px; }
-        .msg.user { justify-content: flex-end; }
-        .msg.assistant { justify-content: flex-start; }
-        .bubble { max-width: 70%; padding: 12px 16px; border-radius: 16px; font-size: 1rem; line-height: 1.5; }
-        /* User message color by prompt source */
-        .msg.user .bubble { background: #3b82f6; color: #fff; border-bottom-right-radius: 4px; }
-        .msg.user[data-source="majestic plt bp for rag"] .bubble { background: #3b82f6; color: #fff; }
-        .msg.user[data-source="fresh 24 bp for rag"] .bubble { background: #10b981; color: #fff; }
-        .msg.user[data-source="majestic cargo bp for rag"] .bubble { background: #f59e42; color: #23272f; }
-        .msg.assistant .bubble { background: #313543; color: #e6e6e6; border-bottom-left-radius: 4px; }
-        #ask-form { display: flex; gap: 8px; }
-        #ask-form {
-            display: flex;
-            gap: 8px;
-            position: sticky;
-            bottom: 0;
-            background: #23272f;
-            z-index: 10;
-            padding-bottom: 8px;
-        }
-        #question { flex: 1; padding: 10px; font-size: 1rem; border-radius: 8px; border: 1px solid #444; background: #23272f; color: #e6e6e6; }
-        #ask-form button { padding: 10px 20px; font-size: 1rem; border-radius: 8px; border: none; background: #3b82f6; color: #fff; cursor: pointer; }
-        #ask-form button:disabled { background: #555; }
-        @media (max-width: 900px) {
-            .main-layout { flex-direction: column; }
-            .sidebar { width: 100%; border-right: none; border-bottom: 1px solid #222; }
-            .chat-container { max-width: 100%; margin: 0; border-radius: 0; }
-        }
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <!--
+    Modified from the Debian original for Ubuntu
+    Last updated: 2022-03-22
+    See: https://launchpad.net/bugs/1966004
+  -->
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <title>Apache2 Ubuntu Default Page: It works</title>
+    <style type="text/css" media="screen">
+  * {
+    margin: 0px 0px 0px 0px;
+    padding: 0px 0px 0px 0px;
+  }
+
+  body, html {
+    padding: 3px 3px 3px 3px;
+
+    background-color: #D8DBE2;
+
+    font-family: Ubuntu, Verdana, sans-serif;
+    font-size: 11pt;
+    text-align: center;
+  }
+
+  div.main_page {
+    position: relative;
+    display: table;
+
+    width: 800px;
+
+    margin-bottom: 3px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0px 0px 0px 0px;
+
+    border-width: 2px;
+    border-color: #212738;
+    border-style: solid;
+
+    background-color: #FFFFFF;
+
+    text-align: center;
+  }
+
+  div.page_header {
+    height: 180px;
+    width: 100%;
+
+    background-color: #F5F6F7;
+  }
+
+  div.page_header span {
+    margin: 15px 0px 0px 50px;
+
+    font-size: 180%;
+    font-weight: bold;
+  }
+
+  div.page_header img {
+    margin: 3px 0px 0px 40px;
+
+    border: 0px 0px 0px;
+  }
+
+  div.banner {
+    padding: 9px 6px 9px 6px;
+    background-color: #E9510E;
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+    position: absolute;
+    left: 40%;
+    bottom: 30px;
+    width: 20%;
+  }
+
+  div.table_of_contents {
+    clear: left;
+
+    min-width: 200px;
+
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.table_of_contents_item {
+    clear: left;
+
+    width: 100%;
+
+    margin: 4px 0px 0px 0px;
+
+    background-color: #FFFFFF;
+
+    color: #000000;
+    text-align: left;
+  }
+
+  div.table_of_contents_item a {
+    margin: 6px 0px 0px 6px;
+  }
+
+  div.content_section {
+    margin: 3px 3px 3px 3px;
+
+    background-color: #FFFFFF;
+
+    text-align: left;
+  }
+
+  div.content_section_text {
+    padding: 4px 8px 4px 8px;
+
+    color: #000000;
+    font-size: 100%;
+  }
+
+  div.content_section_text pre {
+    margin: 8px 0px 8px 0px;
+    padding: 8px 8px 8px 8px;
+
+    border-width: 1px;
+    border-style: dotted;
+    border-color: #000000;
+
+    background-color: #F5F6F7;
+
+    font-style: italic;
+  }
+
+  div.content_section_text p {
+    margin-bottom: 6px;
+  }
+
+  div.content_section_text ul, div.content_section_text li {
+    padding: 4px 8px 4px 16px;
+  }
+
+  div.section_header {
+    padding: 3px 6px 3px 6px;
+
+    background-color: #8E9CB2;
+
+    color: #FFFFFF;
+    font-weight: bold;
+    font-size: 112%;
+    text-align: center;
+  }
+
+  div.section_header_grey {
+    background-color: #9F9386;
+  }
+
+  .floating_element {
+    position: relative;
+    float: left;
+  }
+
+  div.table_of_contents_item a,
+  div.content_section_text a {
+    text-decoration: none;
+    font-weight: bold;
+  }
+
+  div.table_of_contents_item a:link,
+  div.table_of_contents_item a:visited,
+  div.table_of_contents_item a:active {
+    color: #000000;
+  }
+
+  div.table_of_contents_item a:hover {
+    background-color: #000000;
+
+    color: #FFFFFF;
+  }
+
+  div.content_section_text a:link,
+  div.content_section_text a:visited,
+   div.content_section_text a:active {
+    background-color: #DCDFE6;
+
+    color: #000000;
+  }
+
+  div.content_section_text a:hover {
+    background-color: #000000;
+
+    color: #DCDFE6;
+  }
+
+  div.validator {
+  }
     </style>
-</head>
-<body>
-    <div class="main-layout">
-        <aside class="sidebar">
-            <div class="main-topic-group">
-                <button class="main-topic-btn" data-topic="majestic_plt">Majestic P.L.T Initiative</button>
-                <ul class="suggest-list submenu" id="submenu-majestic_plt" style="display:none;"></ul>
-            </div>
-            <div class="main-topic-group">
-                <button class="main-topic-btn" data-topic="fresh_24">FRESH-24 Project</button>
-                <ul class="suggest-list submenu" id="submenu-fresh_24" style="display:none;"></ul>
-            </div>
-            <div class="main-topic-group">
-                <button class="main-topic-btn" data-topic="majestic_air_cargo">Majestic Air Cargo Project</button>
-                <ul class="suggest-list submenu" id="submenu-majestic_air_cargo" style="display:none;"></ul>
-            </div>
-        </aside>
-        <div class="chat-container">
-            <h2 style="text-align:center;">MAJESTIC P.L.T. BUSINESS PLAN CHATBOX</h2>
-            <div class="chat-history" id="chat-history"></div>
-            <div class="chat-bottom-controls">
-                <form id="ask-form" autocomplete="off">
-                    <input type="text" id="question" placeholder="Type your question..." required autofocus>
-                    <button type="submit">Send</button>
-                </form>
-                <div id="info-request-container" style="margin-top: 18px; background: #23272f; padding: 18px 0 0 0; border-radius: 0 0 10px 10px;">
-                    <label for="info-request-email" style="display:block; color:#b0b0b0; font-size:1em; margin-bottom:6px;">Do you want more detailed information? Let's talk, give me your Email and subject you want to go deeper, and I'll come back to you as soon I can.</label>
-                    <input type="email" id="info-request-email" name="info-request-email" style="width:100%; border-radius:8px; border:1px solid #444; background:#181c24; color:#e6e6e6; font-size:1em; padding:10px; margin-bottom:8px;" placeholder="Your email address..." autocomplete="email" required>
-                    <textarea id="info-request" maxlength="500" rows="3" style="width:100%; border-radius:8px; border:1px solid #444; background:#181c24; color:#e6e6e6; font-size:1em; padding:10px; resize:vertical; margin-bottom:8px;" placeholder="Type your message (max 500 characters)..." disabled></textarea>
-                    <button id="info-request-submit" style="width:100%; padding:10px 0; border-radius:8px; border:none; background:#10b981; color:#fff; font-size:1em; cursor:pointer; opacity:1;" disabled>Submit</button>
-                </div>
-            </div>
+  </head>
+  <body>
+    <div class="main_page">
+      <div class="page_header floating_element">
+        <img src="icons/ubuntu-logo.png" alt="Ubuntu Logo"
+             style="width:184px;height:146px;" class="floating_element" />
+        <div>
+          <span style="margin-top: 1.5em;" class="floating_element">
+            Apache2 Default Page
+          </span>
         </div>
+        <div class="banner">
+          <div id="about"></div>
+          It works!
+        </div>
+
+      </div>
+      <div class="content_section floating_element">
+        <div class="content_section_text">
+          <p>
+                This is the default welcome page used to test the correct 
+                operation of the Apache2 server after installation on Ubuntu systems.
+                It is based on the equivalent page on Debian, from which the Ubuntu Apache
+                packaging is derived.
+                If you can read this page, it means that the Apache HTTP server installed at
+                this site is working properly. You should <b>replace this file</b> (located at
+                <tt>/var/www/html/index.html</tt>) before continuing to operate your HTTP server.
+          </p>
+
+          <p>
+                If you are a normal user of this web site and don't know what this page is
+                about, this probably means that the site is currently unavailable due to
+                maintenance.
+                If the problem persists, please contact the site's administrator.
+          </p>
+
+        </div>
+        <div class="section_header">
+          <div id="changes"></div>
+                Configuration Overview
+        </div>
+        <div class="content_section_text">
+          <p>
+                Ubuntu's Apache2 default configuration is different from the
+                upstream default configuration, and split into several files optimized for
+                interaction with Ubuntu tools. The configuration system is
+                <b>fully documented in
+                /usr/share/doc/apache2/README.Debian.gz</b>. Refer to this for the full
+                documentation. Documentation for the web server itself can be
+                found by accessing the <a href="/manual">manual</a> if the <tt>apache2-doc</tt>
+                package was installed on this server.
+          </p>
+          <p>
+                The configuration layout for an Apache2 web server installation on Ubuntu systems is as follows:
+          </p>
+          does
+                        </li>
+
+                        <li>
+                           <tt>ports.conf</tt> is always included from the
+                           main configuration file. It is used to determine the listening ports for
+                           incoming connections, and this file can be customized anytime.
+                        </li>
+
+                        <li>
+                           Configuration files in the <tt>mods-enabled/</tt>,
+                           <tt>conf-enabled/</tt> and <tt>sites-enabled/</tt> directories contain
+                           particular configuration snippets which manage modules, global configuration
+                           fragments, or virtual host configurations, respectively.
+                        </li>
+
+                        <li>
+                           They are activated by symlinking available
+                           configuration files from their respective
+                           *-available/ counterparts. These should be managed
+                           by using our helpers
+                           <tt>
+                                a2enmod,
+                                a2dismod,
+                           </tt>
+                           <tt>
+                                a2ensite,
+                                a2dissite,
+                            </tt>
+                                and
+                           <tt>
+                                a2enconf,
+                                a2disconf
+                           </tt>. See their respective man pages for detailed information.
+                        </li>
+
+                        <li>
+                           The binary is called apache2 and is managed using systemd, so to
+                           start/stop the service use <tt>systemctl start apache2</tt> and
+                           <tt>systemctl stop apache2</tt>, and use <tt>systemctl status apache2</tt>
+                           and <tt>journalctl -u apache2</tt> to check status.  <tt>system</tt>
+                           and <tt>apache2ctl</tt> can also be used for service management if
+                           desired.
+                           <b>Calling <tt>/usr/bin/apache2</tt> directly will not work</b> with the
+                           default configuration.
+                        </li>
+          </ul>
+        </div>
+
+        <div class="section_header">
+            <div id="docroot"></div>
+                Document Roots
+        </div>
+
+        <div class="content_section_text">
+            <p>
+                By default, Ubuntu does not allow access through the web browser to
+                <em>any</em> file outside of those located in <tt>/var/www</tt>,
+                <a href="http://httpd.apache.org/docs/2.4/mod/mod_userdir.html" rel="nofollow">public_html</a>
+                directories (when enabled) and <tt>/usr/share</tt> (for web
+                applications). If your site is using a web document root
+                located elsewhere (such as in <tt>/srv</tt>) you may need to whitelist your
+                document root directory in <tt>/etc/apache2/apache2.conf</tt>.
+            </p>
+            <p>
+                The default Ubuntu document root is <tt>/var/www/html</tt>. You
+                can make your own virtual hosts under /var/www.
+            </p>
+        </div>
+
+        <div class="section_header">
+          <div id="bugs"></div>
+                Reporting Problems
+        </div>
+        <div class="content_section_text">
+          <p>
+                Please use the <tt>ubuntu-bug</tt> tool to report bugs in the
+                Apache2 package with Ubuntu. However, check <a
+                href="https://bugs.launchpad.net/ubuntu/+source/apache2"
+                rel="nofollow">existing bug reports</a> before reporting a new bug.
+          </p>
+          <p>
+                Please report bugs specific to modules (such as PHP and others)
+                to their respective packages, not to the web server itself.
+          </p>
+        </div>
+
+      </div>
     </div>
-    <script type="module">
-        import { FRESH_24_PROMPTS, getRandomPrompts as getRandomFresh24Prompts } from './fresh_24_prompts.js';
-        import { MAJESTIC_PLT_PROMPTS, getRandomPrompts as getRandomPltPrompts } from './majestic_plt_prompts.js';
-        import { MAJESTIC_CARGO_PROMPTS, getRandomPrompts as getRandomCargoPrompts } from './majestic_cargo_prompts.js';
-        // Sidebar submenu logic
-        document.addEventListener('DOMContentLoaded', function() {
-            // Helper to render prompts for Fresh 24
-            function renderFresh24Prompts(excludeIndices = []) {
-                const submenu = document.getElementById('submenu-fresh_24');
-                submenu.innerHTML = '';
-                const prompts = getRandomFresh24Prompts(FRESH_24_PROMPTS, 5, excludeIndices);
-                prompts.forEach((p, idx) => {
-                    const li = document.createElement('li');
-                    const btn = document.createElement('button');
-                    btn.className = 'suggest-btn';
-                    btn.setAttribute('data-source', 'fresh 24 bp for rag');
-                    btn.textContent = p.prompt;
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        questionInput.value = p.prompt;
-                        askForm.setAttribute('data-filter-source', 'fresh 24 bp for rag');
-                        askForm.requestSubmit();
-                    });
-                    li.appendChild(btn);
-                    submenu.appendChild(li);
-                });
-                // Add 'More Suggested Topics' button
-                const moreLi = document.createElement('li');
-                const moreBtn = document.createElement('button');
-                moreBtn.className = 'suggest-btn';
-                moreBtn.style.background = '#444';
-                moreBtn.textContent = 'More Suggested Topics';
-                moreBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    // Exclude currently shown prompts
-                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : FRESH_24_PROMPTS.indexOf(p));
-                    renderFresh24Prompts(shownIndices);
-                });
-                moreLi.appendChild(moreBtn);
-                submenu.appendChild(moreLi);
-            }
-
-            // Helper to render prompts for Majestic P.L.T
-            function renderPltPrompts(excludeIndices = []) {
-                const submenu = document.getElementById('submenu-majestic_plt');
-                submenu.innerHTML = '';
-                const prompts = getRandomPltPrompts(MAJESTIC_PLT_PROMPTS, 5, excludeIndices);
-                prompts.forEach((p, idx) => {
-                    const li = document.createElement('li');
-                    const btn = document.createElement('button');
-                    btn.className = 'suggest-btn';
-                    btn.setAttribute('data-source', 'majestic plt bp for rag');
-                    btn.textContent = p.prompt;
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        questionInput.value = p.prompt;
-                        askForm.setAttribute('data-filter-source', 'majestic plt bp for rag');
-                        askForm.requestSubmit();
-                    });
-                    li.appendChild(btn);
-                    submenu.appendChild(li);
-                });
-                // Add 'More Suggested Topics' button
-                const moreLi = document.createElement('li');
-                const moreBtn = document.createElement('button');
-                moreBtn.className = 'suggest-btn';
-                moreBtn.style.background = '#444';
-                moreBtn.textContent = 'More Suggested Topics';
-                moreBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : MAJESTIC_PLT_PROMPTS.indexOf(p));
-                    renderPltPrompts(shownIndices);
-                });
-                moreLi.appendChild(moreBtn);
-                submenu.appendChild(moreLi);
-            }
-
-            // Helper to render prompts for Majestic Air Cargo
-            function renderCargoPrompts(excludeIndices = []) {
-                const submenu = document.getElementById('submenu-majestic_air_cargo');
-                submenu.innerHTML = '';
-                const prompts = getRandomCargoPrompts(MAJESTIC_CARGO_PROMPTS, 5, excludeIndices);
-                prompts.forEach((p, idx) => {
-                    const li = document.createElement('li');
-                    const btn = document.createElement('button');
-                    btn.className = 'suggest-btn';
-                    btn.setAttribute('data-source', 'majestic cargo bp for rag');
-                    btn.textContent = p.prompt;
-                    btn.addEventListener('click', function(e) {
-                        e.stopPropagation();
-                        questionInput.value = p.prompt;
-                        askForm.setAttribute('data-filter-source', 'majestic cargo bp for rag');
-                        askForm.requestSubmit();
-                    });
-                    li.appendChild(btn);
-                    submenu.appendChild(li);
-                });
-                // Add 'More Suggested Topics' button
-                const moreLi = document.createElement('li');
-                const moreBtn = document.createElement('button');
-                moreBtn.className = 'suggest-btn';
-                moreBtn.style.background = '#444';
-                moreBtn.textContent = 'More Suggested Topics';
-                moreBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    const shownIndices = prompts.map(p => p._idx !== undefined ? p._idx : MAJESTIC_CARGO_PROMPTS.indexOf(p));
-                    renderCargoPrompts(shownIndices);
-                });
-                moreLi.appendChild(moreBtn);
-                submenu.appendChild(moreLi);
-            }
-
-            // Expand/collapse submenus for each main topic
-            document.querySelectorAll('.main-topic-btn').forEach(btn => {
-                btn.addEventListener('click', function(e) {
-                    const topic = btn.getAttribute('data-topic');
-                    document.querySelectorAll('.submenu').forEach(sub => {
-                        if (sub.id === 'submenu-' + topic) {
-                            // Render dynamic prompts for each topic
-                            if (topic === 'fresh_24') renderFresh24Prompts();
-                            else if (topic === 'majestic_plt') renderPltPrompts();
-                            else if (topic === 'majestic_air_cargo') renderCargoPrompts();
-                            sub.style.display = (sub.style.display === 'none') ? 'block' : 'none';
-                        } else {
-                            sub.style.display = 'none';
-                        }
-                    });
-                });
-            });
-        });
-        const chatHistory = document.getElementById('chat-history');
-        const askForm = document.getElementById('ask-form');
-        const questionInput = document.getElementById('question');
-        let history = [];
-
-        function renderHistory() {
-            chatHistory.innerHTML = '';
-            history.forEach(msg => {
-                const div = document.createElement('div');
-                div.className = 'msg ' + msg.role;
-                if (msg.source) div.setAttribute('data-source', msg.source);
-                let html = `<div class="bubble">${msg.text}</div>`;
-                div.innerHTML = html;
-                chatHistory.appendChild(div);
-            });
-            // Scroll to last message
-            chatHistory.scrollTop = chatHistory.scrollHeight;
-        }
-
-        askForm.onsubmit = async function(e) {
-            e.preventDefault();
-            const question = questionInput.value.trim();
-            if (!question) return;
-            // Get filter_source if set by submenu
-            const filterSource = askForm.getAttribute('data-filter-source') || null;
-            askForm.removeAttribute('data-filter-source');
-            // Store the source for coloring
-            let userMsg = { role: 'user', text: question };
-            if (filterSource) userMsg.source = filterSource;
-            history.push(userMsg);
-            renderHistory();
-            // Scroll to last message after user prompt
-            setTimeout(() => { chatHistory.scrollTop = chatHistory.scrollHeight; }, 0);
-            questionInput.value = '';
-            askForm.querySelector('button').disabled = true;
-            // Call FastAPI backend /rag endpoint
-            let answer = 'Loading...';
-            let sources = [];
-            try {
-                const payload = { question, top_k: 8 };
-                if (filterSource) payload.filter_source = filterSource;
-                const res = await fetch('http://localhost:8000/rag', {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(payload)
-                });
-                const data = await res.json();
-                answer = data.answer;
-                sources = data.chunks || [];
-            } catch (err) {
-                answer = 'Error: ' + err.message;
-            }
-            history.push({ role: 'assistant', text: answer, sources });
-            renderHistory();
-            // Scroll to last message after assistant reply
-            setTimeout(() => { chatHistory.scrollTop = chatHistory.scrollHeight; }, 0);
-            askForm.querySelector('button').disabled = false;
-            questionInput.focus();
-        };
-        // --- Info request email and message validation logic ---
-        const infoEmail = document.getElementById('info-request-email');
-        const infoTextarea = document.getElementById('info-request');
-        const infoSubmit = document.getElementById('info-request-submit');
-
-        function validateEmail(email) {
-            // Simple email regex
-            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-        }
-
-        infoEmail.addEventListener('input', function() {
-            if (validateEmail(infoEmail.value)) {
-                infoTextarea.disabled = false;
-                infoTextarea.style.opacity = '1';
-            } else {
-                infoTextarea.disabled = true;
-                infoTextarea.value = '';
-                infoSubmit.disabled = true;
-            }
-        });
-
-        infoTextarea.addEventListener('input', function() {
-            if (infoTextarea.value.length >= 10) {
-                infoSubmit.disabled = false;
-            } else {
-                infoSubmit.disabled = true;
-            }
-        });
-    </script>
-</body>
+    <div class="validator">
+    </div>
+  </body>
 </html>
